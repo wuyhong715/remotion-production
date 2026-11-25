@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with: {persist-credentials: false}
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npm test
+      - name: Test real FFmpeg stream-copy assembly
+        run: node tests/media-integration.mjs
+      - name: Validate workflow policy and syntax
+        run: |
+          node tests/workflow-policy.mjs
+          dir=$(mktemp -d)
+          curl -fsSL --retry 2 -o "$dir/actionlint.tar.gz" https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz
+          printf '%s  %s\n' 8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8 "$dir/actionlint.tar.gz" | sha256sum -c -
+          tar -xf "$dir/actionlint.tar.gz" -C "$dir" actionlint
+          # v1.7.12 predates GitHub's queue field; the policy test above asserts it.
+          sed '/^  queue: max$/d' .github/workflows/render.yml > "$dir/render.yml"
+          "$dir/actionlint" .github/workflows/ci.yml "$dir/render.yml"
+      - name: Check tracked files for credential-like content
+        run: |
+          if git grep -IlE '(ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|-----BEGIN (RSA|OPENSSH|EC) PRIVATE KEY-----)' --; then
+            echo 'credential-like content found in tracked files' >&2
+            exit 1
+          fi

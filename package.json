@@ -1,0 +1,30 @@
+{
+  "name": "remotion-production",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "preview": "remotion render src/index.ts Demo out/Demo.mp4 --codec=h264",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test tests/*.test.mjs",
+    "prepare-render": "node scripts/render.mjs prepare",
+    "render-video": "node scripts/render.mjs video",
+    "render-audio": "node scripts/render.mjs audio",
+    "assemble": "node scripts/assemble.mjs"
+  },
+  "dependencies": {
+    "@remotion/bundler": "4.0.536",
+    "@remotion/cli": "4.0.536",
+    "@remotion/renderer": "4.0.536",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "remotion": "4.0.536"
+  },
+  "devDependencies": {
+    "@types/react": "19.1.0",
+    "typescript": "5.8.3",
+    "yaml": "2.8.3"
+  }
+}
